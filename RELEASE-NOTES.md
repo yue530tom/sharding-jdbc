@@ -25,9 +25,11 @@
 ### Bug Fixes
 
 1. [ISSUE #628](https://github.com/sharding-sphere/sharding-sphere/issues/628) Support data type jsonb for PostgreSQL
+1. [ISSUE #629](https://github.com/sharding-sphere/sharding-sphere/issues/629) Support transaction isolation on JDBC
 1. [ISSUE #646](https://github.com/sharding-sphere/sharding-sphere/issues/646) When aliases in SELECT ITEMS correspond to the real column names of GROUP BY or ORDER BY, there is no need to add columns
 1. [ISSUE #735](https://github.com/sharding-sphere/sharding-sphere/issues/735) Unexpected slave datasource routing result when using Round-robin load-balance algorithm in Mybatis
 1. [ISSUE #806](https://github.com/sharding-sphere/sharding-sphere/issues/806) SQL parse error with `NOT IN`
+1. [ISSUE #827](https://github.com/sharding-sphere/sharding-sphere/issues/827) Fix endless loop for bad SQL like `SELECT * FROM table WHERE id IN ()`
 
 ## 2.0.3
 
@@ -222,7 +224,7 @@
 
 ### Bug Fixes
 
-1. [ISSUE #194](https://github.com/sharding-sphere/sharding-sphere/issues/194) Some component exceptions in the close method of Connection, Statement, Resultset and other interfaces cause the close method of another component to be not invoked
+1. [ISSUE #194](https://github.com/sharding-sphere/sharding-sphere/issues/194) Some component exceptions in the close method of Connection, Statement, ResultSet and other interfaces cause the close method of another component to be not invoked
 1. [ISSUE #199](https://github.com/sharding-sphere/sharding-sphere/issues/199) Sharding and reuse PreparedStatement object cause route error
 1. [ISSUE #201](https://github.com/sharding-sphere/sharding-sphere/issues/201) Event transmission missing before batch operation execution 
 1. [ISSUE #203](https://github.com/sharding-sphere/sharding-sphere/issues/203) Merge events sent by the batch operation
@@ -334,7 +336,7 @@ Automatic generation key implementation, including
 ### Refactor
 
 1. [ISSUE #49](https://github.com/sharding-sphere/sharding-sphere/issues/49) Adjust the property configuration
-1. [ISSUE #51](https://github.com/sharding-sphere/sharding-sphere/issues/51) Refector of Hint interface
+1. [ISSUE #51](https://github.com/sharding-sphere/sharding-sphere/issues/51) Refactor of Hint interface
 
 ### Bug Fixes
 

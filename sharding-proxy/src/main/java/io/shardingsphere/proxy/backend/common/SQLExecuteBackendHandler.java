@@ -33,6 +33,7 @@ import io.shardingsphere.core.routing.router.masterslave.MasterSlaveRouter;
 import io.shardingsphere.core.routing.router.masterslave.MasterVisitedManager;
 import io.shardingsphere.proxy.backend.mysql.MySQLPacketQueryResult;
 import io.shardingsphere.proxy.config.RuleRegistry;
+import io.shardingsphere.proxy.metadata.ProxyShardingRefreshHandler;
 import io.shardingsphere.proxy.transport.common.packet.DatabaseProtocolPacket;
 import io.shardingsphere.proxy.transport.mysql.constant.ColumnType;
 import io.shardingsphere.proxy.transport.mysql.constant.StatusFlag;
@@ -123,12 +124,14 @@ public final class SQLExecuteBackendHandler implements BackendHandler {
         if (routeResult.getExecutionUnits().isEmpty()) {
             return new CommandResponsePackets(new OKPacket(1, 0, 0, StatusFlag.SERVER_STATUS_AUTOCOMMIT.getValue(), 0, ""));
         }
-        List<CommandResponsePackets> result = new LinkedList<>();
+        List<CommandResponsePackets> packets = new LinkedList<>();
         for (SQLExecutionUnit each : routeResult.getExecutionUnits()) {
             // TODO multiple threads
-            result.add(execute(routeResult.getSqlStatement(), each.getDataSource(), each.getSqlUnit().getSql()));
+            packets.add(execute(routeResult.getSqlStatement(), each.getDataSource(), each.getSqlUnit().getSql()));
         }
-        return merge(routeResult.getSqlStatement(), result);
+        CommandResponsePackets result = merge(routeResult.getSqlStatement(), packets);
+        ProxyShardingRefreshHandler.build(routeResult).execute();
+        return result;
     }
     
     private CommandResponsePackets execute(final SQLStatement sqlStatement, final String dataSourceName, final String sql) {
@@ -288,13 +291,15 @@ public final class SQLExecuteBackendHandler implements BackendHandler {
     
     private CommandResponsePackets mergeDML(final CommandResponsePackets firstPackets) {
         int affectedRows = 0;
+        long lastInsertId = 0;
         for (DatabaseProtocolPacket each : firstPackets.getDatabaseProtocolPackets()) {
             if (each instanceof OKPacket) {
                 OKPacket okPacket = (OKPacket) each;
                 affectedRows += okPacket.getAffectedRows();
+                lastInsertId = okPacket.getLastInsertId();
             }
         }
-        return new CommandResponsePackets(new OKPacket(1, affectedRows, 0, StatusFlag.SERVER_STATUS_AUTOCOMMIT.getValue(), 0, ""));
+        return new CommandResponsePackets(new OKPacket(1, affectedRows, lastInsertId, StatusFlag.SERVER_STATUS_AUTOCOMMIT.getValue(), 0, ""));
     }
     
     private CommandResponsePackets mergeDQLorDAL(final SQLStatement sqlStatement, final List<CommandResponsePackets> packets) {
