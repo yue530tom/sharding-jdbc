@@ -30,11 +30,12 @@ import java.util.Properties;
  * Sharding datasource for spring namespace.
  *
  * @author caohao
+ * @author zhangliang
  */
 public class SpringShardingDataSource extends ShardingDataSource {
     
-    public SpringShardingDataSource(final Map<String, DataSource> dataSourceMap, final ShardingRuleConfiguration shardingRuleConfig, 
-                                    final Map<String, Object> configMap, final Properties props) throws SQLException {
-        super(dataSourceMap, new ShardingRule(shardingRuleConfig, dataSourceMap.keySet()), configMap, props);
+    public SpringShardingDataSource(final Map<String, DataSource> dataSourceMap,
+                                    final ShardingRuleConfiguration shardingRuleConfig, final Map<String, Object> configMap, final Properties props) throws SQLException {
+        super(getRawDataSourceMap(dataSourceMap), new ShardingRule(getShardingRuleConfiguration(dataSourceMap, shardingRuleConfig), dataSourceMap.keySet()), configMap, props);
     }
 }

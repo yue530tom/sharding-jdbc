@@ -139,6 +139,7 @@ public final class ShardingRule {
     private TableRule createTableRuleWithDefaultDataSource(final String logicTableName) {
         TableRuleConfiguration tableRuleConfig = new TableRuleConfiguration();
         tableRuleConfig.setLogicTable(logicTableName);
+        tableRuleConfig.setActualDataNodes(shardingDataSourceNames.getDefaultDataSourceName() + "." + logicTableName);
         return new TableRule(tableRuleConfig, new ShardingDataSourceNames(shardingRuleConfig, Collections.singletonList(shardingDataSourceNames.getDefaultDataSourceName())));
     }
     
@@ -340,5 +341,20 @@ public final class ShardingRule {
      */
     public boolean isLogicIndex(final String logicIndexName, final String logicTableName) {
         return logicIndexName.equals(getTableRule(logicTableName).getLogicIndex());
+    }
+    
+    /**
+     * Get master data source name.
+     *
+     * @param masterSlaveRuleName master-slave rule name.
+     * @return master dataSource name or master-slave rule name
+     */
+    public String getMasterDataSourceName(final String masterSlaveRuleName) {
+        for (MasterSlaveRule each : masterSlaveRules) {
+            if (each.getName().equals(masterSlaveRuleName)) {
+                return each.getMasterDataSourceName();
+            }
+        }
+        return masterSlaveRuleName;
     }
 }

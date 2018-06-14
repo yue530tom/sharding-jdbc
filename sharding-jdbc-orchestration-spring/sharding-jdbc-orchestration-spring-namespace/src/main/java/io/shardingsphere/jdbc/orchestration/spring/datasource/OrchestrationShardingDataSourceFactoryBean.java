@@ -31,8 +31,8 @@ import java.util.Properties;
 
 /**
  * Orchestration sharding data source factory bean.
- * 
- * @author zhangliang 
+ *
+ * @author zhangliang
  */
 public class OrchestrationShardingDataSourceFactoryBean implements FactoryBean<OrchestrationShardingDataSource>, InitializingBean, DisposableBean {
     
@@ -78,7 +78,7 @@ public class OrchestrationShardingDataSourceFactoryBean implements FactoryBean<O
     
     @Override
     public void afterPropertiesSet() throws Exception {
-        orchestrationShardingDataSource = 
+        orchestrationShardingDataSource =
                 (OrchestrationShardingDataSource) OrchestrationShardingDataSourceFactory.createDataSource(dataSourceMap, shardingRuleConfig, configMap, props, orchestrationConfig);
     }
     
