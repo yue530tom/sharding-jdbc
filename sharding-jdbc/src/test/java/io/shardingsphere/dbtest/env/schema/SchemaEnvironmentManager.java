@@ -24,10 +24,10 @@ import io.shardingsphere.dbtest.env.IntegrateTestEnvironment;
 import io.shardingsphere.dbtest.env.datasource.DataSourceUtil;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.lang3.StringUtils;
 import org.h2.tools.RunScript;
 
+import javax.sql.DataSource;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import java.io.FileReader;
@@ -66,17 +66,16 @@ public final class SchemaEnvironmentManager {
      * @param shardingRuleType sharding rule type
      * @throws IOException IO exception
      * @throws JAXBException JAXB exception
+     * @throws SQLException SQL exception
      */
-    public static void createDatabase(final String shardingRuleType) throws IOException, JAXBException {
+    public static void createDatabase(final String shardingRuleType) throws IOException, JAXBException, SQLException {
         SchemaEnvironment databaseInitialization = unmarshal(EnvironmentPath.getDatabaseEnvironmentResourceFile(shardingRuleType));
         for (DatabaseType each : IntegrateTestEnvironment.getInstance().getDatabaseTypes()) {
+            DataSource dataSource = DataSourceUtil.createDataSource(each, null);
             try (
-                    BasicDataSource dataSource = (BasicDataSource) DataSourceUtil.createDataSource(each, null);
                     Connection connection = dataSource.getConnection();
                     StringReader stringReader = new StringReader(Joiner.on(";\n").skipNulls().join(generateCreateDatabaseSQLs(each, databaseInitialization.getDatabases())))) {
                 RunScript.execute(connection, stringReader);
-            } catch (final SQLException ex) {
-                // TODO schema maybe exist for oracle only
             }
         }
     }
@@ -91,13 +90,13 @@ public final class SchemaEnvironmentManager {
     public static void dropDatabase(final String shardingRuleType) throws IOException, JAXBException {
         SchemaEnvironment databaseInitialization = unmarshal(EnvironmentPath.getDatabaseEnvironmentResourceFile(shardingRuleType));
         for (DatabaseType each : IntegrateTestEnvironment.getInstance().getDatabaseTypes()) {
+            DataSource dataSource = DataSourceUtil.createDataSource(each, null);
             try (
-                    BasicDataSource dataSource = (BasicDataSource) DataSourceUtil.createDataSource(each, null);
                     Connection connection = dataSource.getConnection();
                     StringReader stringReader = new StringReader(Joiner.on(";\n").skipNulls().join(generateDropDatabaseSQLs(each, databaseInitialization.getDatabases())))) {
                 RunScript.execute(connection, stringReader);
             } catch (final SQLException ex) {
-                // TODO schema maybe not exist for oracle only
+                // TODO database maybe not exist
             }
         }
     }
@@ -112,7 +111,7 @@ public final class SchemaEnvironmentManager {
         if (DatabaseType.H2 == databaseType) {
             return Collections.emptyList();
         }
-        String sql = DatabaseType.Oracle == databaseType ? "CREATE SCHEMA %s" : "CREATE DATABASE IF NOT EXISTS %s";
+        String sql = DatabaseType.Oracle == databaseType ? "CREATE SCHEMA %s" : "CREATE DATABASE %s";
         Collection<String> result = new LinkedList<>();
         for (String each : databases) {
             result.add(String.format(sql, each));
@@ -138,37 +137,23 @@ public final class SchemaEnvironmentManager {
      * @param shardingRuleType sharding rule type
      * @throws JAXBException JAXB exception
      * @throws IOException IO exception
+     * @throws SQLException SQL exception
      */
-    public static void createTable(final String shardingRuleType) throws JAXBException, IOException {
+    public static void createTable(final String shardingRuleType) throws JAXBException, IOException, SQLException {
         for (DatabaseType each : IntegrateTestEnvironment.getInstance().getDatabaseTypes()) {
             SchemaEnvironment databaseEnvironmentSchema = unmarshal(EnvironmentPath.getDatabaseEnvironmentResourceFile(shardingRuleType));
             createTable(databaseEnvironmentSchema, each);
         }
     }
     
-    private static void createTable(final SchemaEnvironment databaseEnvironmentSchema, final DatabaseType databaseType) {
+    private static void createTable(final SchemaEnvironment databaseEnvironmentSchema, final DatabaseType databaseType) throws SQLException {
         for (String each : databaseEnvironmentSchema.getDatabases()) {
-            try (BasicDataSource dataSource = (BasicDataSource) DataSourceUtil.createDataSource(databaseType, each);
-                 Connection connection = dataSource.getConnection();
-                 StringReader stringReader = new StringReader(StringUtils.join(getTableCreateSQLs(databaseEnvironmentSchema.getTableCreateSQLs(), databaseType), ";\n"))) {
+            DataSource dataSource = DataSourceUtil.createDataSource(databaseType, each);
+            try (Connection connection = dataSource.getConnection();
+                 StringReader stringReader = new StringReader(StringUtils.join(databaseEnvironmentSchema.getTableCreateSQLs(), ";\n"))) {
                 RunScript.execute(connection, stringReader);
-            } catch (final SQLException ex) {
-                // TODO schema maybe not exist for oracle only
             }
         }
-    }
-    
-    private static List<String> getTableCreateSQLs(final List<String> tableCreateSQLs, final DatabaseType databaseType) {
-        if (DatabaseType.H2 != databaseType) {
-            return tableCreateSQLs;
-        }
-        List<String> result = new LinkedList<>();
-        for (String each : tableCreateSQLs) {
-            if (!each.startsWith("CREATE INDEX")) {
-                result.add(each);
-            }
-        }
-        return result;
     }
     
     /**
@@ -187,20 +172,13 @@ public final class SchemaEnvironmentManager {
     
     private static void dropTable(final SchemaEnvironment databaseEnvironmentSchema, final DatabaseType databaseType) {
         for (String each : databaseEnvironmentSchema.getDatabases()) {
-            try (BasicDataSource dataSource = (BasicDataSource) DataSourceUtil.createDataSource(databaseType, each);
-                 Connection connection = dataSource.getConnection();
-                 StringReader stringReader = new StringReader(StringUtils.join(getTableDropSQLs(databaseEnvironmentSchema.getTableDropSQLs(), databaseType), ";\n"))) {
+            DataSource dataSource = DataSourceUtil.createDataSource(databaseType, each);
+            try (Connection connection = dataSource.getConnection();
+                 StringReader stringReader = new StringReader(StringUtils.join(databaseEnvironmentSchema.getTableDropSQLs(), ";\n"))) {
                 RunScript.execute(connection, stringReader);
             } catch (final SQLException ex) {
-                // TODO schema maybe not exist for oracle only
+                // TODO table maybe not exist
             }
         }
-    }
-    
-    private static List<String> getTableDropSQLs(final List<String> tableDropSQLs, final DatabaseType databaseType) {
-        if (DatabaseType.H2 == databaseType) {
-            return tableDropSQLs;
-        }
-        return new LinkedList<>();
     }
 }

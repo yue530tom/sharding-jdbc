@@ -20,6 +20,8 @@ package io.shardingsphere.proxy.frontend.mysql;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
+import io.shardingsphere.core.routing.router.masterslave.MasterVisitedManager;
+import io.shardingsphere.proxy.config.RuleRegistry;
 import io.shardingsphere.proxy.frontend.common.FrontendHandler;
 import io.shardingsphere.proxy.transport.common.packet.DatabaseProtocolPacket;
 import io.shardingsphere.proxy.transport.mysql.constant.StatusFlag;
@@ -33,6 +35,8 @@ import io.shardingsphere.proxy.transport.mysql.packet.handshake.HandshakePacket;
 import io.shardingsphere.proxy.transport.mysql.packet.handshake.HandshakeResponse41Packet;
 import io.shardingsphere.proxy.transport.mysql.packet.handshake.ProxyAuthorityHandler;
 import io.shardingsphere.proxy.util.MySQLResultCache;
+
+import java.util.concurrent.ExecutorService;
 
 /**
  * MySQL frontend handler.
@@ -76,7 +80,7 @@ public final class MySQLFrontendHandler extends FrontendHandler {
     
     @Override
     protected void executeCommand(final ChannelHandlerContext context, final ByteBuf message) {
-        ChannelThreadHolder.get(context.channel().id()).execute(new Runnable() {
+        getExecutor(context).execute(new Runnable() {
             
             @Override
             public void run() {
@@ -95,9 +99,14 @@ public final class MySQLFrontendHandler extends FrontendHandler {
                         context.writeAndFlush(commandPacket.getResultValue());
                     }
                 } finally {
+                    MasterVisitedManager.clear();
                     mysqlPacketPayload.getByteBuf().release();
                 }
             }
         });
+    }
+    
+    private ExecutorService getExecutor(final ChannelHandlerContext context) {
+        return RuleRegistry.isXaTransaction() ? ChannelThreadHolder.get(context.channel().id()) : eventLoopGroup;
     }
 }

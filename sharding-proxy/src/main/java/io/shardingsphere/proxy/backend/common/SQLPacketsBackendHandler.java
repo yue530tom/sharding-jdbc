@@ -17,16 +17,7 @@
 
 package io.shardingsphere.proxy.backend.common;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import com.google.common.collect.Lists;
-
 import io.netty.channel.Channel;
 import io.netty.channel.pool.SimpleChannelPool;
 import io.shardingsphere.core.constant.DatabaseType;
@@ -55,15 +46,26 @@ import io.shardingsphere.proxy.transport.mysql.packet.generic.ErrPacket;
 import io.shardingsphere.proxy.transport.mysql.packet.generic.OKPacket;
 import io.shardingsphere.proxy.util.MySQLResultCache;
 import io.shardingsphere.proxy.util.SynchronizedFuture;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * SQL packets backend handler.
  *
  * @author wangkai
  * @author linjiaqi
+ * @author panjuan
  */
 @Slf4j
+@Getter
 public final class SQLPacketsBackendHandler implements BackendHandler {
     private static final int CONNECT_TIMEOUT = 30;
     
@@ -208,7 +210,8 @@ public final class SQLPacketsBackendHandler implements BackendHandler {
     
     private CommandResponsePackets mergeDQLorDAL(final SQLStatement sqlStatement, final List<CommandResponsePackets> packets, final List<QueryResult> queryResults) {
         try {
-            mergedResult = MergeEngineFactory.newInstance(RuleRegistry.getInstance().getShardingRule(), queryResults, sqlStatement).merge();
+            mergedResult = MergeEngineFactory.newInstance(RuleRegistry.getInstance().getShardingRule(), queryResults,
+                    sqlStatement, RuleRegistry.getInstance().getShardingMetaData()).merge();
             isMerged = true;
         } catch (final SQLException ex) {
             return new CommandResponsePackets(new ErrPacket(1, ex.getErrorCode(), "", ex.getSQLState(), ex.getMessage()));
