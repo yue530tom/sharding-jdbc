@@ -20,11 +20,12 @@ package io.shardingsphere.core.routing;
 import io.shardingsphere.core.routing.router.DatabaseHintSQLRouterTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
+import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses({
+@SuiteClasses({
         DatabaseTest.class,
         DatabaseHintSQLRouterTest.class
 })
-public class AllRoutingTests {
+public final class AllRoutingTests {
 }

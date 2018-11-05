@@ -17,8 +17,9 @@
 
 package io.shardingsphere.core.rule;
 
+import io.shardingsphere.core.constant.PoolType;
+import io.shardingsphere.core.constant.transaction.ProxyPoolType;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
@@ -26,10 +27,13 @@ import lombok.Setter;
  *
  * @author zhangyonglun
  */
-@NoArgsConstructor
 @Getter
 @Setter
 public final class DataSourceParameter {
+    
+    private PoolType originPoolType;
+    
+    private ProxyPoolType proxyDatasourceType = ProxyPoolType.VENDOR;
     
     private String url;
     
@@ -37,7 +41,7 @@ public final class DataSourceParameter {
     
     private String password;
     
-    private Boolean autoCommit;
+    private boolean autoCommit;
     
     private long connectionTimeout;
     

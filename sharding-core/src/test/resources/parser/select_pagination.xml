@@ -56,7 +56,7 @@
         <limit row-count="5" row-count-index="4" />
     </parser-result>
     
-    <parser-result sql-case-id="select_pagination_with_limit" parameters="1, 2, 9, 10, 5, 3">
+    <parser-result sql-case-id="select_pagination_with_limit_with_back_quotes" parameters="1, 2, 9, 10, 5, 3">
         <tables>
             <table name="t_order" alias="o" />
             <table name="t_order_item" alias="i" />
@@ -64,6 +64,35 @@
         <tokens>
             <table-token begin-position="16" original-literals="`t_order`" />
             <table-token begin-position="33" original-literals="`t_order_item`" />
+            <offset-token begin-position="195" offset="5" />
+            <row-count-token begin-position="198" row-count="3" />
+        </tokens>
+        <or-condition>
+            <and-condition>
+                <condition column-name="user_id" table-name="t_order" operator="IN">
+                    <value index="0" literal="1" type="int" />
+                    <value index="1" literal="2" type="int" />
+                </condition>
+                <condition column-name="order_id" table-name="t_order" operator="BETWEEN">
+                    <value index="2" literal="9" type="int" />
+                    <value index="3" literal="10" type="int" />
+                </condition>
+            </and-condition>
+        </or-condition>
+        <order-by-columns>
+            <order-by-column name="item_id" owner="i" order-direction="DESC" />
+        </order-by-columns>
+        <limit offset="5" offset-index="4" row-count="3" row-count-index="5" />
+    </parser-result>
+    
+    <parser-result sql-case-id="select_pagination_with_limit_with_double_quotes" parameters="1, 2, 9, 10, 5, 3">
+        <tables>
+            <table name="t_order" alias="o" />
+            <table name="t_order_item" alias="i" />
+        </tables>
+        <tokens>
+            <table-token begin-position="16" original-literals="&quot;t_order&quot;" />
+            <table-token begin-position="33" original-literals="&quot;t_order_item&quot;" />
             <offset-token begin-position="195" offset="5" />
             <row-count-token begin-position="198" row-count="3" />
         </tokens>
@@ -300,4 +329,19 @@
         </order-by-columns>
         <limit offset="3" offset-index="5" row-count-index="4" row-count="5" />
     </parser-result>
+    
+    <parser-result sql-case-id="select_pagination_with_row_number_not_at_end" parameters="20">
+        <tables>
+            <table name="t_order"/>
+        </tables>
+        <tokens>
+            <table-token begin-position="14" original-literals="t_order"/>
+            <row-count-token begin-position="38" row-count="20"/>
+        </tokens>
+        <order-by-columns>
+            <order-by-column name="order_id" order-direction="ASC" />
+        </order-by-columns>
+        <limit row-count="20" row-count-index="0"/>
+    </parser-result>
+    
 </parser-result-sets>

@@ -20,6 +20,94 @@
         </or-condition>
     </parser-result>
     
+    <parser-result sql-case-id="insert_without_parameters">
+        <tables>
+            <table name="t_order" />
+        </tables>
+        <tokens>
+            <table-token begin-position="12" original-literals="t_order" />
+            <insert-values-token begin-position="55" table-name="t_order"/>
+        </tokens>
+        <or-condition>
+            <and-condition>
+                <condition column-name="order_id" table-name="t_order" operator="EQUAL">
+                    <value literal="1" type="int" />
+                </condition>
+                <condition column-name="user_id" table-name="t_order" operator="EQUAL">
+                    <value literal="1" type="int" />
+                </condition>
+            </and-condition>
+        </or-condition>
+    </parser-result>
+    
+    <parser-result sql-case-id="insert_with_multiple_values">
+        <tables>
+            <table name="t_order" />
+        </tables>
+        <tokens>
+            <table-token begin-position="12" original-literals="t_order" />
+            <insert-values-token begin-position="55" table-name="t_order"/>
+        </tokens>
+        <or-condition>
+            <and-condition>
+                <condition column-name="order_id" table-name="t_order" operator="EQUAL">
+                    <value literal="1" type="int" />
+                </condition>
+                <condition column-name="user_id" table-name="t_order" operator="EQUAL">
+                    <value literal="1" type="int" />
+                </condition>
+            </and-condition>
+            <and-condition>
+                <condition column-name="order_id" table-name="t_order" operator="EQUAL">
+                    <value literal="2" type="int" />
+                </condition>
+                <condition column-name="user_id" table-name="t_order" operator="EQUAL">
+                    <value literal="2" type="int" />
+                </condition>
+            </and-condition>
+        </or-condition>
+    </parser-result>
+    
+    <parser-result sql-case-id="insert_with_special_characters">
+        <tables>
+            <table name="t_order" />
+        </tables>
+        <tokens>
+            <table-token begin-position="12" original-literals="`t_order`" />
+            <insert-values-token begin-position="63" table-name="t_order"/>
+        </tokens>
+        <or-condition>
+            <and-condition>
+                <condition column-name="order_id" table-name="t_order" operator="EQUAL">
+                    <value literal="1" type="int" />
+                </condition>
+                <condition column-name="user_id" table-name="t_order" operator="EQUAL">
+                    <value literal="1" type="int" />
+                </condition>
+            </and-condition>
+        </or-condition>
+    </parser-result>
+    
+    <parser-result sql-case-id="insert_with_special_syntax">
+        <tables>
+            <table name="t_order" />
+        </tables>
+        <tokens>
+            <table-token begin-position="33" original-literals="t_order" />
+            <insert-values-token begin-position="76" table-name="t_order"/>
+        </tokens>
+        <or-condition>
+            <and-condition>
+                <condition column-name="order_id" table-name="t_order" operator="EQUAL">
+                    <value literal="1" type="int" />
+                </condition>
+                <condition column-name="user_id" table-name="t_order" operator="EQUAL">
+                    <value literal="1" type="int" />
+                </condition>
+            </and-condition>
+        </or-condition>
+    </parser-result>
+    
     <parser-result sql-case-id="insert_with_all_placeholders_for_table_identifier" parameters="1, 1, 'init'">
         <tables>
             <table name="t_order" />
@@ -54,6 +142,7 @@
                 <items>
                     <item>order_id</item>
                     <item>user_id</item>
+                    <item>status</item>
                 </items>
             </items-token>
             <insert-column-token begin-position="19" column-name=")" />
@@ -313,6 +402,62 @@
                 </condition>
                 <condition column-name="user_id" table-name="t_order" operator="EQUAL">
                     <value index="4" literal="11" type="int" />
+                </condition>
+            </and-condition>
+        </or-condition>
+    </parser-result>
+
+    <parser-result sql-case-id="insert_with_batch_and_irregular_parameters" parameters="1, 2, 2, 'init'">
+        <tables>
+            <table name="t_order" />
+        </tables>
+        <tokens>
+            <table-token begin-position="12" original-literals="t_order" />
+            <insert-values-token begin-position="55" table-name="t_order"/>
+        </tokens>
+        <or-condition>
+            <and-condition>
+                <condition column-name="order_id" table-name="t_order" operator="EQUAL">
+                    <value index="0" literal="1" type="int" />
+                </condition>
+                <condition column-name="user_id" table-name="t_order" operator="EQUAL">
+                    <value literal="1" type="int" />
+                </condition>
+            </and-condition>
+            <and-condition>
+                <condition column-name="order_id" table-name="t_order" operator="EQUAL">
+                    <value index="1" literal="2" type="int" />
+                </condition>
+                <condition column-name="user_id" table-name="t_order" operator="EQUAL">
+                    <value index="2" literal="2" type="int" />
+                </condition>
+            </and-condition>
+        </or-condition>
+    </parser-result>
+
+    <parser-result sql-case-id="insert_with_batch_and_composite_expression" parameters="1, 1, 'init', 2, 2, 'init'">
+        <tables>
+            <table name="t_order" />
+        </tables>
+        <tokens>
+            <table-token begin-position="12" original-literals="t_order" />
+            <insert-values-token begin-position="55" table-name="t_order"/>
+        </tokens>
+        <or-condition>
+            <and-condition>
+                <condition column-name="order_id" table-name="t_order" operator="EQUAL">
+                    <value index="0" literal="1" type="int" />
+                </condition>
+                <condition column-name="user_id" table-name="t_order" operator="EQUAL">
+                    <value index="1" literal="1" type="int" />
+                </condition>
+            </and-condition>
+            <and-condition>
+                <condition column-name="order_id" table-name="t_order" operator="EQUAL">
+                    <value index="3" literal="2" type="int" />
+                </condition>
+                <condition column-name="user_id" table-name="t_order" operator="EQUAL">
+                    <value index="4" literal="2" type="int" />
                 </condition>
             </and-condition>
         </or-condition>

@@ -22,7 +22,9 @@ import io.shardingsphere.core.parsing.integrate.jaxb.condition.ExpectedOrConditi
 import io.shardingsphere.core.parsing.integrate.jaxb.groupby.ExpectedGroupByColumn;
 import io.shardingsphere.core.parsing.integrate.jaxb.item.ExpectedAggregationSelectItem;
 import io.shardingsphere.core.parsing.integrate.jaxb.limit.ExpectedLimit;
+import io.shardingsphere.core.parsing.integrate.jaxb.meta.ExpectedTableMetaData;
 import io.shardingsphere.core.parsing.integrate.jaxb.orderby.ExpectedOrderByColumn;
+import io.shardingsphere.core.parsing.integrate.jaxb.table.ExpectedAlterTable;
 import io.shardingsphere.core.parsing.integrate.jaxb.table.ExpectedTable;
 import io.shardingsphere.core.parsing.integrate.jaxb.token.ExpectedTokens;
 import lombok.Getter;
@@ -52,6 +54,10 @@ public final class ParserResult {
     @XmlElement(name = "table")
     private List<ExpectedTable> tables = new LinkedList<>();
     
+    @XmlElementWrapper
+    @XmlElement(name = "schema")
+    private List<ExpectedTable> schemas = new LinkedList<>();
+    
     @XmlElement(name = "or-condition")
     private ExpectedOrCondition orCondition = new ExpectedOrCondition();
     
@@ -72,6 +78,12 @@ public final class ParserResult {
     
     @XmlElement 
     private ExpectedLimit limit;
+    
+    @XmlElement
+    private ExpectedTableMetaData meta;
+    
+    @XmlElement(name = "alter-table")
+    private ExpectedAlterTable alterTable;
     
     /**
      * Get parameters.

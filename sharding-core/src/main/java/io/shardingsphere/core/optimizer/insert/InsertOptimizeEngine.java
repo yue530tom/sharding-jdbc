@@ -18,7 +18,7 @@
 package io.shardingsphere.core.optimizer.insert;
 
 import com.google.common.base.Optional;
-import io.shardingsphere.core.api.algorithm.sharding.ListShardingValue;
+import io.shardingsphere.api.algorithm.sharding.ListShardingValue;
 import io.shardingsphere.core.optimizer.OptimizeEngine;
 import io.shardingsphere.core.optimizer.condition.ShardingCondition;
 import io.shardingsphere.core.optimizer.condition.ShardingConditions;
@@ -63,11 +63,13 @@ public final class InsertOptimizeEngine implements OptimizeEngine {
         List<ShardingCondition> result = new ArrayList<>(andConditions.size());
         Iterator<Number> generatedKeys = null;
         int count = 0;
+        int parametersCount = 0;
         for (AndCondition each : andConditions) {
             InsertValue insertValue = insertValues.get(count);
             List<Object> currentParameters = new ArrayList<>(insertValue.getParametersCount() + 1);
-            currentParameters.addAll(parameters.subList(count * insertValue.getParametersCount(), (count + 1) * insertValue.getParametersCount()));
-            
+            if (insertValue.getParametersCount() > 0) {
+                currentParameters.addAll(parameters.subList(parametersCount, parametersCount += insertValue.getParametersCount()));
+            }
             String logicTableName = insertStatement.getTables().getSingleTableName();
             Optional<Column> generateKeyColumn = shardingRule.getGenerateKeyColumn(logicTableName);
             InsertShardingCondition insertShardingCondition;
@@ -79,7 +81,7 @@ public final class InsertOptimizeEngine implements OptimizeEngine {
                 }
                 String expression;
                 Number currentGeneratedKey = generatedKeys.next();
-                if (0 == parameters.size()) {
+                if (parameters.isEmpty()) {
                     if (DefaultKeyword.VALUES.equals(insertValue.getType())) {
                         expression = insertValue.getExpression().substring(0, insertValue.getExpression().lastIndexOf(")")) + ", " + currentGeneratedKey.toString() + ")";
                     } else {

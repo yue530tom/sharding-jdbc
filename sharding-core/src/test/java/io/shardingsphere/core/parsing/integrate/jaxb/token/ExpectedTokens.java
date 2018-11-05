@@ -35,7 +35,7 @@ public final class ExpectedTokens {
     private List<ExpectedTableToken> tableTokens = new LinkedList<>();
     
     @XmlElement(name = "index-token")
-    private ExpectedIndexToken indexToken;
+    private List<ExpectedIndexToken> indexTokens = new LinkedList<>();
     
     @XmlElement(name = "items-token")
     private ExpectedItemsToken itemsToken;
@@ -57,4 +57,7 @@ public final class ExpectedTokens {
     
     @XmlElement(name = "insert-column-token")
     private ExpectedInsertColumnToken insertColumnToken;
+    
+    @XmlElement(name = "schema-token")
+    private List<ExpectedSchemaToken> schemaTokens = new LinkedList<>();
 }
