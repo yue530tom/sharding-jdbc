@@ -18,21 +18,22 @@
 package io.shardingsphere.shardingproxy.runtime;
 
 import com.google.common.base.Strings;
+import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import io.shardingsphere.api.ConfigMapContext;
-import io.shardingsphere.api.config.MasterSlaveRuleConfiguration;
-import io.shardingsphere.api.config.RuleConfiguration;
-import io.shardingsphere.api.config.ShardingRuleConfiguration;
+import io.shardingsphere.api.config.rule.MasterSlaveRuleConfiguration;
+import io.shardingsphere.api.config.rule.RuleConfiguration;
+import io.shardingsphere.api.config.rule.ShardingRuleConfiguration;
 import io.shardingsphere.core.constant.properties.ShardingProperties;
 import io.shardingsphere.core.constant.properties.ShardingPropertiesConstant;
 import io.shardingsphere.core.constant.transaction.TransactionType;
-import io.shardingsphere.core.event.ShardingEventBusInstance;
 import io.shardingsphere.core.rule.Authentication;
 import io.shardingsphere.core.rule.DataSourceParameter;
-import io.shardingsphere.orchestration.internal.event.config.AuthenticationChangedEvent;
-import io.shardingsphere.orchestration.internal.event.config.PropertiesChangedEvent;
-import io.shardingsphere.orchestration.internal.event.state.CircuitStateEventBusEvent;
-import io.shardingsphere.shardingproxy.runtime.nio.BackendNIOConfiguration;
+import io.shardingsphere.orchestration.internal.eventbus.ShardingOrchestrationEventBus;
+import io.shardingsphere.orchestration.internal.registry.config.event.AuthenticationChangedEvent;
+import io.shardingsphere.orchestration.internal.registry.config.event.ConfigMapChangedEvent;
+import io.shardingsphere.orchestration.internal.registry.config.event.PropertiesChangedEvent;
+import io.shardingsphere.orchestration.internal.registry.state.event.CircuitStateChangedEvent;
 import io.shardingsphere.shardingproxy.runtime.schema.LogicSchema;
 import io.shardingsphere.shardingproxy.runtime.schema.MasterSlaveSchema;
 import io.shardingsphere.shardingproxy.runtime.schema.ShardingSchema;
@@ -59,11 +60,11 @@ public final class GlobalRegistry {
     
     private static final GlobalRegistry INSTANCE = new GlobalRegistry();
     
+    private final EventBus eventBus = ShardingOrchestrationEventBus.getInstance();
+    
     private final Map<String, LogicSchema> logicSchemas = new ConcurrentHashMap<>();
     
-    private ShardingProperties shardingProperties;
-    
-    private BackendNIOConfiguration backendNIOConfig;
+    private ShardingProperties shardingProperties = new ShardingProperties(new Properties());
     
     private Authentication authentication;
     
@@ -82,7 +83,7 @@ public final class GlobalRegistry {
      * Register listener.
      */
     public void register() {
-        ShardingEventBusInstance.getInstance().register(this);
+        eventBus.register(this);
     }
     
     /**
@@ -114,37 +115,25 @@ public final class GlobalRegistry {
         if (!configMap.isEmpty()) {
             ConfigMapContext.getInstance().getConfigMap().putAll(configMap);
         }
-        shardingProperties = new ShardingProperties(null == props ? new Properties() : props);
+        if (null != props) {
+            shardingProperties = new ShardingProperties(props);
+        }
         this.authentication = authentication;
         initSchema(schemaDataSources, schemaRules, isUsingRegistry);
-        initBackendNIOConfig();
     }
     
     private void initSchema(final Map<String, Map<String, DataSourceParameter>> schemaDataSources, final Map<String, RuleConfiguration> schemaRules, final boolean isUsingRegistry) {
         for (Entry<String, RuleConfiguration> entry : schemaRules.entrySet()) {
             String schemaName = entry.getKey();
-            logicSchemas.put(schemaName, getLogicSchema(schemaName, schemaDataSources, entry.getValue(), isUsingRegistry));
+            logicSchemas.put(schemaName, createLogicSchema(schemaName, schemaDataSources, entry.getValue(), isUsingRegistry));
         }
     }
     
-    private LogicSchema getLogicSchema(final String schemaName, final Map<String, Map<String, DataSourceParameter>> schemaDataSources, final RuleConfiguration ruleConfiguration, final boolean isUsingRegistry) {
-        return ruleConfiguration instanceof ShardingRuleConfiguration ? new ShardingSchema(schemaName, schemaDataSources.get(schemaName), (ShardingRuleConfiguration) ruleConfiguration, isUsingRegistry)
+    private LogicSchema createLogicSchema(final String schemaName,
+                                          final Map<String, Map<String, DataSourceParameter>> schemaDataSources, final RuleConfiguration ruleConfiguration, final boolean isUsingRegistry) {
+        return ruleConfiguration instanceof ShardingRuleConfiguration
+                ? new ShardingSchema(schemaName, schemaDataSources.get(schemaName), (ShardingRuleConfiguration) ruleConfiguration, isUsingRegistry)
                 : new MasterSlaveSchema(schemaName, schemaDataSources.get(schemaName), (MasterSlaveRuleConfiguration) ruleConfiguration, isUsingRegistry);
-    }
-    
-    private void initBackendNIOConfig() {
-        int databaseConnectionCount = shardingProperties.getValue(ShardingPropertiesConstant.PROXY_BACKEND_MAX_CONNECTIONS);
-        int connectionTimeoutSeconds = shardingProperties.getValue(ShardingPropertiesConstant.PROXY_BACKEND_CONNECTION_TIMEOUT_SECONDS);
-        backendNIOConfig = new BackendNIOConfiguration(databaseConnectionCount, connectionTimeoutSeconds);
-    }
-    
-    /**
-     * Get max connections size per query.
-     *
-     * @return max connections size per query
-     */
-    public int getMaxConnectionsSizePerQuery() {
-        return shardingProperties.getValue(ShardingPropertiesConstant.MAX_CONNECTIONS_SIZE_PER_QUERY);
     }
     
     /**
@@ -152,55 +141,8 @@ public final class GlobalRegistry {
      *
      * @return transaction type
      */
-    // TODO just config proxy.transaction.enable here, in future(3.1.0)
     public TransactionType getTransactionType() {
-        return shardingProperties.<Boolean>getValue(ShardingPropertiesConstant.PROXY_TRANSACTION_ENABLED) ? TransactionType.XA : TransactionType.LOCAL;
-    }
-    
-    /**
-     * Is open tracing enable.
-     *
-     * @return is or not
-     */
-    public boolean isOpenTracingEnable() {
-        return shardingProperties.<Boolean>getValue(ShardingPropertiesConstant.PROXY_OPENTRACING_ENABLED);
-    }
-    
-    /**
-     * Is show SQL.
-     *
-     * @return show or not
-     */
-    public boolean isShowSQL() {
-        return shardingProperties.getValue(ShardingPropertiesConstant.SQL_SHOW);
-    }
-    
-    /**
-     * Get acceptor size.
-     *
-     * @return acceptor size
-     */
-    public int getAcceptorSize() {
-        return shardingProperties.getValue(ShardingPropertiesConstant.ACCEPTOR_SIZE);
-    }
-    
-    /**
-     * Get executor size.
-     *
-     * @return executor size
-     */
-    public int getExecutorSize() {
-        return shardingProperties.getValue(ShardingPropertiesConstant.EXECUTOR_SIZE);
-    }
-    
-    /**
-     * Is use NIO.
-     *
-     * @return use or not
-     */
-    // TODO :jiaqi force off use NIO for backend, this feature is not complete yet
-    public boolean isUseNIO() {
-        return false;
+        return TransactionType.valueOf((String) shardingProperties.getValue(ShardingPropertiesConstant.PROXY_TRANSACTION_TYPE));
     }
     
     /**
@@ -235,30 +177,41 @@ public final class GlobalRegistry {
     /**
      * Renew properties.
      *
-     * @param propertiesEvent properties event
+     * @param propertiesChangedEvent properties changed event
      */
     @Subscribe
-    public void renew(final PropertiesChangedEvent propertiesEvent) {
-        shardingProperties = new ShardingProperties(propertiesEvent.getProps());
+    public synchronized void renew(final PropertiesChangedEvent propertiesChangedEvent) {
+        shardingProperties = new ShardingProperties(propertiesChangedEvent.getProps());
     }
     
     /**
      * Renew authentication.
      *
-     * @param authenticationEvent authentication event
+     * @param authenticationChangedEvent authentication changed event
      */
     @Subscribe
-    public void renew(final AuthenticationChangedEvent authenticationEvent) {
-        authentication = authenticationEvent.getAuthentication();
+    public synchronized void renew(final AuthenticationChangedEvent authenticationChangedEvent) {
+        authentication = authenticationChangedEvent.getAuthentication();
     }
     
     /**
-     * Renew circuit breaker dataSource names.
+     * Renew config map.
      *
-     * @param circuitStateEventBusEvent jdbc circuit event bus event
+     * @param configMapChangedEvent config map changed event
      */
     @Subscribe
-    public void renewCircuitBreakerDataSourceNames(final CircuitStateEventBusEvent circuitStateEventBusEvent) {
-        isCircuitBreak = circuitStateEventBusEvent.isCircuitBreak();
+    public synchronized void renew(final ConfigMapChangedEvent configMapChangedEvent) {
+        ConfigMapContext.getInstance().getConfigMap().clear();
+        ConfigMapContext.getInstance().getConfigMap().putAll(configMapChangedEvent.getConfigMap());
+    }
+    
+    /**
+     * Renew circuit breaker state.
+     *
+     * @param circuitStateChangedEvent circuit state changed event
+     */
+    @Subscribe
+    public synchronized void renew(final CircuitStateChangedEvent circuitStateChangedEvent) {
+        isCircuitBreak = circuitStateChangedEvent.isCircuitBreak();
     }
 }

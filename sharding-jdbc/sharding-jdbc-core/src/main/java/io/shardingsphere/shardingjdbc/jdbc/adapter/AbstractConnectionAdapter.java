@@ -18,24 +18,24 @@
 package io.shardingsphere.shardingjdbc.jdbc.adapter;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Multimap;
 import io.shardingsphere.core.constant.ConnectionMode;
 import io.shardingsphere.core.constant.transaction.TransactionOperationType;
 import io.shardingsphere.core.constant.transaction.TransactionType;
-import io.shardingsphere.core.event.transaction.ShardingTransactionEvent;
-import io.shardingsphere.core.event.transaction.base.SagaTransactionEvent;
-import io.shardingsphere.core.event.transaction.xa.XATransactionEvent;
 import io.shardingsphere.core.hint.HintManagerHolder;
 import io.shardingsphere.core.routing.router.masterslave.MasterVisitedManager;
+import io.shardingsphere.core.transaction.TransactionTypeHolder;
 import io.shardingsphere.shardingjdbc.jdbc.adapter.executor.ForceExecuteCallback;
 import io.shardingsphere.shardingjdbc.jdbc.adapter.executor.ForceExecuteTemplate;
 import io.shardingsphere.shardingjdbc.jdbc.unsupported.AbstractUnsupportedOperationConnection;
-import io.shardingsphere.shardingjdbc.transaction.TransactionTypeHolder;
 import io.shardingsphere.spi.root.RootInvokeHook;
 import io.shardingsphere.spi.root.SPIRootInvokeHook;
-import io.shardingsphere.spi.transaction.ShardingTransactionHandler;
-import io.shardingsphere.spi.transaction.ShardingTransactionHandlerRegistry;
+import io.shardingsphere.transaction.api.ShardingTransactionHandlerRegistry;
+import io.shardingsphere.transaction.internal.context.SagaTransactionContext;
+import io.shardingsphere.transaction.internal.context.ShardingTransactionContext;
+import io.shardingsphere.transaction.internal.context.XATransactionContext;
+import io.shardingsphere.transaction.spi.ShardingTransactionHandler;
 import lombok.Getter;
 
 import javax.sql.DataSource;
@@ -60,7 +60,7 @@ import java.util.Map.Entry;
 @Getter
 public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOperationConnection {
     
-    private final Multimap<String, Connection> cachedConnections = HashMultimap.create();
+    private final Multimap<String, Connection> cachedConnections = LinkedHashMultimap.create();
     
     private boolean autoCommit = true;
     
@@ -78,14 +78,14 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
     
     private final TransactionType transactionType;
     
-    private final ShardingTransactionHandler<ShardingTransactionEvent> shardingTransactionHandler;
+    private final ShardingTransactionHandler<ShardingTransactionContext> shardingTransactionHandler;
     
     protected AbstractConnectionAdapter(final TransactionType transactionType) {
         rootInvokeHook.start();
         this.transactionType = transactionType;
         shardingTransactionHandler = ShardingTransactionHandlerRegistry.getInstance().getHandler(transactionType);
-        if (transactionType != TransactionType.LOCAL) {
-            Preconditions.checkNotNull(shardingTransactionHandler, String.format("Cannot find transaction manager of [%s]", transactionType));
+        if (TransactionType.LOCAL != transactionType) {
+            Preconditions.checkNotNull(shardingTransactionHandler, "Cannot find transaction manager of [%s]", transactionType);
         }
     }
     
@@ -186,10 +186,13 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
                     connection.setAutoCommit(autoCommit);
                 }
             });
-        } else if (TransactionType.XA == transactionType) {
-            shardingTransactionHandler.doInTransaction(new XATransactionEvent(TransactionOperationType.BEGIN));
-        } else if (TransactionType.BASE == transactionType) {
-            shardingTransactionHandler.doInTransaction(new SagaTransactionEvent(TransactionOperationType.BEGIN, this));
+        }
+        if (!autoCommit) {
+            if (TransactionType.XA == transactionType) {
+                shardingTransactionHandler.doInTransaction(new XATransactionContext(TransactionOperationType.BEGIN));
+            } else if (TransactionType.BASE == transactionType) {
+                shardingTransactionHandler.doInTransaction(new SagaTransactionContext(TransactionOperationType.BEGIN, this));
+            }
         }
     }
     
@@ -204,9 +207,9 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
                 }
             });
         } else if (TransactionType.XA == transactionType) {
-            shardingTransactionHandler.doInTransaction(new XATransactionEvent(TransactionOperationType.COMMIT));
+            shardingTransactionHandler.doInTransaction(new XATransactionContext(TransactionOperationType.COMMIT));
         } else if (TransactionType.BASE == transactionType) {
-            shardingTransactionHandler.doInTransaction(new SagaTransactionEvent(TransactionOperationType.COMMIT));
+            shardingTransactionHandler.doInTransaction(new SagaTransactionContext(TransactionOperationType.COMMIT));
         }
     }
     
@@ -221,9 +224,9 @@ public abstract class AbstractConnectionAdapter extends AbstractUnsupportedOpera
                 }
             });
         } else if (TransactionType.XA == transactionType) {
-            shardingTransactionHandler.doInTransaction(new XATransactionEvent(TransactionOperationType.ROLLBACK));
+            shardingTransactionHandler.doInTransaction(new XATransactionContext(TransactionOperationType.ROLLBACK));
         } else if (TransactionType.BASE == transactionType) {
-            shardingTransactionHandler.doInTransaction(new SagaTransactionEvent(TransactionOperationType.ROLLBACK));
+            shardingTransactionHandler.doInTransaction(new SagaTransactionContext(TransactionOperationType.ROLLBACK));
         }
     }
     

@@ -1,4 +1,19 @@
-## 3.0.1
+## 3.1.0.M1
+
+### API调整
+
+1. 调整数据库治理模块的注册中心存储结构。
+1. 调整Sharding-JDBC API，包括MasterSlaveRuleConfiguration，ShardingRuleConfiguration和TableRuleConfiguration。
+
+### 新功能
+
+1. 支持XA强一致事务。
+1. 路由至单一数据节点的SQL 100%全兼容（仅MySQL）。
+1. 支持`DISTINCT`语句。
+1. 支持广播表。
+1. 解决使用默认分布式自增主键生成策略在TPS不高的情况下可能导致数据倾斜的问题。
+
+[Changelog for Issues and Pull requests](https://github.com/sharding-sphere/sharding-sphere/milestone/3)
 
 ## 3.0.0
 

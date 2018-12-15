@@ -1,20 +1,19 @@
 lexer grammar DataType;
 
-import Keyword,Symbol;
+import Keyword, Symbol;
 
 STRING
-    : DOUBLE_QUOTA ('\\"'|.)*? DOUBLE_QUOTA
-    | SINGLE_QUOTA (SINGLE_QUOTA |.)*? SINGLE_QUOTA
+    : DQ_ ('\\"'|.)*? DQ_ | SQ_ (SQ_ |.)*? SQ_
     ;
-
+    
 NUMBER
     : MINUS? INT_? DOT? INT_ EXP?
     ;
-
+    
 INT_ 
     : [0-9]+
     ;
-          
+    
 EXP 
     : E [+\-]? INT_
     ;
@@ -24,13 +23,11 @@ fragment HEX
     ;
     
 HEX_DIGIT
-    : '0x' HEX+
-    | 'X' SINGLE_QUOTA HEX+ SINGLE_QUOTA
+    : '0x' HEX+ | 'X' SQ_ HEX+ SQ_
     ;
-
+    
 BIT_NUM
-    : '0b' ('0'|'1')+
-    | B SINGLE_QUOTA ('0'|'1')+ SINGLE_QUOTA
+    : '0b' ('0'|'1')+ | B SQ_ ('0'|'1')+ SQ_
     ;
     
 WS  

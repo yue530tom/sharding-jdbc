@@ -17,9 +17,10 @@
 
 package io.shardingsphere.shardingproxy.backend.jdbc;
 
-import io.shardingsphere.api.config.ShardingRuleConfiguration;
+import io.shardingsphere.api.config.rule.ShardingRuleConfiguration;
 import io.shardingsphere.core.constant.DatabaseType;
 import io.shardingsphere.core.constant.SQLType;
+import io.shardingsphere.core.constant.properties.ShardingPropertiesConstant;
 import io.shardingsphere.core.constant.transaction.TransactionType;
 import io.shardingsphere.core.merger.MergeEngineFactory;
 import io.shardingsphere.core.merger.MergedResult;
@@ -32,14 +33,16 @@ import io.shardingsphere.core.rule.ShardingRule;
 import io.shardingsphere.shardingproxy.backend.AbstractBackendHandler;
 import io.shardingsphere.shardingproxy.backend.BackendExecutorContext;
 import io.shardingsphere.shardingproxy.backend.ResultPacket;
+import io.shardingsphere.shardingproxy.backend.jdbc.connection.BackendConnection;
+import io.shardingsphere.shardingproxy.backend.jdbc.connection.ConnectionStatus;
 import io.shardingsphere.shardingproxy.backend.jdbc.execute.JDBCExecuteEngine;
 import io.shardingsphere.shardingproxy.backend.jdbc.execute.response.ExecuteQueryResponse;
 import io.shardingsphere.shardingproxy.backend.jdbc.execute.response.ExecuteResponse;
 import io.shardingsphere.shardingproxy.backend.jdbc.execute.response.ExecuteUpdateResponse;
 import io.shardingsphere.shardingproxy.runtime.GlobalRegistry;
+import io.shardingsphere.shardingproxy.runtime.metadata.ProxyTableMetaDataConnectionManager;
 import io.shardingsphere.shardingproxy.runtime.schema.LogicSchema;
 import io.shardingsphere.shardingproxy.runtime.schema.ShardingSchema;
-import io.shardingsphere.shardingproxy.runtime.metadata.ProxyTableMetaDataConnectionManager;
 import io.shardingsphere.shardingproxy.transport.mysql.constant.ServerErrorCode;
 import io.shardingsphere.shardingproxy.transport.mysql.packet.command.CommandResponsePackets;
 import io.shardingsphere.shardingproxy.transport.mysql.packet.command.query.ColumnDefinition41Packet;
@@ -48,10 +51,8 @@ import io.shardingsphere.shardingproxy.transport.mysql.packet.command.query.Quer
 import io.shardingsphere.shardingproxy.transport.mysql.packet.generic.EofPacket;
 import io.shardingsphere.shardingproxy.transport.mysql.packet.generic.ErrPacket;
 import io.shardingsphere.shardingproxy.transport.mysql.packet.generic.OKPacket;
-import io.shardingsphere.transaction.xa.manager.XATransactionManagerSPILoader;
 import lombok.RequiredArgsConstructor;
 
-import javax.transaction.Status;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -102,15 +103,16 @@ public final class JDBCBackendHandler extends AbstractBackendHandler {
             String logicTableName = sqlStatement.getTables().getSingleTableName();
             // TODO refresh table meta data by SQL parse result
             TableMetaDataLoader tableMetaDataLoader = new TableMetaDataLoader(logicSchema.getMetaData().getDataSource(), BackendExecutorContext.getInstance().getExecuteEngine(),
-                    new ProxyTableMetaDataConnectionManager(logicSchema.getBackendDataSource()), GLOBAL_REGISTRY.getMaxConnectionsSizePerQuery());
+                    new ProxyTableMetaDataConnectionManager(logicSchema.getBackendDataSource()), 
+                    GLOBAL_REGISTRY.getShardingProperties().<Integer>getValue(ShardingPropertiesConstant.MAX_CONNECTIONS_SIZE_PER_QUERY));
             logicSchema.getMetaData().getTable().put(logicTableName, tableMetaDataLoader.load(logicTableName, ((ShardingSchema) logicSchema).getShardingRule()));
         }
         return merge(sqlStatement);
     }
     
     private boolean isUnsupportedXA(final SQLType sqlType) {
-        return TransactionType.XA == GlobalRegistry.getInstance().getTransactionType() && SQLType.DDL == sqlType
-                && Status.STATUS_NO_TRANSACTION != XATransactionManagerSPILoader.getInstance().getTransactionManager().getStatus();
+        BackendConnection connection = executeEngine.getBackendConnection();
+        return TransactionType.XA == connection.getTransactionType() && SQLType.DDL == sqlType && ConnectionStatus.TRANSACTION == connection.getStateHandler().getStatus();
     }
     
     private CommandResponsePackets merge(final SQLStatement sqlStatement) throws SQLException {

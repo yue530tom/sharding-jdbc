@@ -2,7 +2,7 @@ grammar SQLServerStatement;
 
 import SQLServerKeyword, Keyword, SQLServerBase, SQLServerCreateIndex, SQLServerAlterIndex
        , SQLServerDropIndex, SQLServerCreateTable, SQLServerAlterTable, SQLServerDropTable, SQLServerTruncateTable
-       , SQLServerTCLStatement
+       , SQLServerTCLStatement, SQLServerDCLStatement
        ;
 
 execute
@@ -18,5 +18,17 @@ execute
     | rollback
     | savepoint
     | beginWork
+    | setVariable
+    | grant
+    | revoke
+    | deny
+    | createUser
+    | alterUser
+    | dropUser
+    | createLogin
+    | alterLogin
+    | dropLogin
+    | createRole
+    | alterRole
+    | dropRole
     ;
- 

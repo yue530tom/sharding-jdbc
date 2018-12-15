@@ -17,7 +17,7 @@
 
 package io.shardingsphere.core.parsing.integrate.asserts;
 
-import io.shardingsphere.core.parsing.antlr.sql.ddl.AlterTableStatement;
+import io.shardingsphere.core.parsing.antlr.sql.statement.ddl.AlterTableStatement;
 import io.shardingsphere.core.parsing.integrate.asserts.condition.ConditionAssert;
 import io.shardingsphere.core.parsing.integrate.asserts.groupby.GroupByAssert;
 import io.shardingsphere.core.parsing.integrate.asserts.index.IndexAssert;
@@ -107,7 +107,7 @@ public final class SQLStatementAssert {
     }
     
     private void assertSelectStatement(final SelectStatement actual) {
-        itemAssert.assertItems(actual.getItems(), expected.getAggregationSelectItems());
+        itemAssert.assertItems(actual.getItems(), expected.getSelectItems());
         groupByAssert.assertGroupByItems(actual.getGroupByItems(), expected.getGroupByColumns());
         orderByAssert.assertOrderByItems(actual.getOrderByItems(), expected.getOrderByColumns());
         limitAssert.assertLimit(actual.getLimit(), expected.getLimit());

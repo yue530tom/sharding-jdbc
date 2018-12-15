@@ -48,7 +48,7 @@ public enum ShardingPropertiesConstant {
      *
      * <p>
      * Worker group accept tcp connection.
-     * User group accept MySQL command.
+     * Command execute engine accept MySQL command.
      * Default: CPU cores * 2.
      * </p>
      */
@@ -65,30 +65,39 @@ public enum ShardingPropertiesConstant {
      */
     EXECUTOR_SIZE("executor.size", String.valueOf(0), int.class),
     
+    /**
+     * Max opened connection size for each query.
+     */
     MAX_CONNECTIONS_SIZE_PER_QUERY("max.connections.size.per.query", String.valueOf(1), int.class),
     
-    PROXY_TRANSACTION_ENABLED("proxy.transaction.enabled", String.valueOf(Boolean.FALSE), boolean.class),
+    /**
+     * Sharding-Proxy's flush threshold for every records from databases.
+     */
+    PROXY_FRONTEND_FLUSH_THRESHOLD("proxy.frontend.flush.threshold", String.valueOf(128), int.class),
     
     /**
      * Transaction type of proxy.
      *
      * <p>
      * LOCAL:
-     * Sharding-Sphere will run with LOCAL transaction.
+     * Sharding-Proxy will run with LOCAL transaction.
      * </p>
      *
      * <p>
      * XA:
-     * Sharding-Sphere will run with XA transaction.
+     * Sharding-Proxy will run with XA transaction.
      * </p>
      *
      * <p>
      * BASE:
-     * Sharding-Sphere will run with BASE transaction.
+     * Sharding-Proxy will run with BASE transaction.
      * </p>
      */
     PROXY_TRANSACTION_TYPE("proxy.transaction.type", TransactionType.LOCAL.name(), String.class),
     
+    /**
+     * Enable opentracing for Sharding-Proxy.
+     */
     PROXY_OPENTRACING_ENABLED("proxy.opentracing.enabled", String.valueOf(Boolean.FALSE), boolean.class),
     
     PROXY_BACKEND_USE_NIO("proxy.backend.use.nio", String.valueOf(Boolean.FALSE), boolean.class),

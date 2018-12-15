@@ -1,21 +1,18 @@
 grammar OracleTableBase;
 
-import OracleKeyword,Keyword,Symbol,OracleBase,BaseRule,DataType;
+import OracleKeyword, Keyword, Symbol, OracleBase, BaseRule, DataType;
 
 columnDefinition
     : columnName dataType SORT?
     (DEFAULT (ON NULL)? expr | identityClause)?
     (ENCRYPT encryptionSpec)?
-    ( 
-       inlineConstraint+ 
-      | inlineRefConstraint
-    )?
+    (inlineConstraint+ | inlineRefConstraint)?
     ;
-
+    
 identityClause
-    : GENERATED (ALWAYS | BY DEFAULT (ON NULL)?) AS IDENTITY LEFT_PAREN? (identityOptions+)? RIGHT_PAREN?
+    : GENERATED (ALWAYS | BY DEFAULT (ON NULL)?) AS IDENTITY LP_? (identityOptions+)? RP_?
     ;
-
+    
 identityOptions
     : START WITH (NUMBER | LIMIT VALUE)
     | INCREMENT BY NUMBER
@@ -32,55 +29,48 @@ identityOptions
     ;
     
 virtualColumnDefinition
-    : columnName dataType? (GENERATED ALWAYS)? AS LEFT_PAREN expr RIGHT_PAREN 
-    VIRTUAL? inlineConstraint*
+    : columnName dataType? (GENERATED ALWAYS)? AS LP_ expr RP_ VIRTUAL? inlineConstraint*
     ;
-
+    
 inlineConstraint
     : (CONSTRAINT constraintName)?
-    ( 
-    	  NOT? NULL
-        | UNIQUE
-        | primaryKey
-        | referencesClause
-        | CHECK LEFT_PAREN expr RIGHT_PAREN
-    )
-    constraintState?
+    (NOT? NULL | UNIQUE | primaryKey | referencesClause | CHECK LP_ expr RP_)
+    constraintState*
     ;
     
 referencesClause
-    : REFERENCES tableName columnList?
-    (ON DELETE (CASCADE | SET NULL))?
+    : REFERENCES tableName columnList? (ON DELETE (CASCADE | SET NULL))?
     ;
     
-constraintState:
-    (
-        notDeferrable
-        | initiallyClause
-        | (RELY | NORELY)
-        | usingIndexClause
-        | (ENABLE | DISABLE)
-        | (VALIDATE | NOVALIDATE)
-        | exceptionsClause
-    )+
+constraintState
+    : notDeferrable 
+    | initiallyClause 
+    | RELY 
+    | NORELY 
+    | usingIndexClause 
+    | ENABLE 
+    | DISABLE 
+    | VALIDATE 
+    | NOVALIDATE 
+    | exceptionsClause
     ;
-
-notDeferrable:
-    NOT? DEFERRABLE
+    
+notDeferrable
+    : NOT? DEFERRABLE
     ;
     
 initiallyClause:
     INITIALLY ( IMMEDIATE | DEFERRED )
     ;
-
-exceptionsClause:
-    EXCEPTIONS INTO  
+    
+exceptionsClause
+    : EXCEPTIONS INTO  
     ;
-        
+    
 usingIndexClause
     : USING INDEX
     (  indexName
-    | (LEFT_PAREN createIndex RIGHT_PAREN) 
+    | (LP_ createIndex RP_) 
     )?
     ;
     
@@ -91,46 +81,46 @@ createIndex
 inlineRefConstraint
     : SCOPE IS tableName
     | WITH ROWID
-    | (CONSTRAINT constraintName)? referencesClause constraintState?
+    | (CONSTRAINT constraintName)? referencesClause constraintState*
     ;
-
+    
 outOfLineConstraint
     : (CONSTRAINT constraintName)?
     (
     	UNIQUE columnList
         | primaryKey columnList 
         | FOREIGN KEY columnList referencesClause
-        | CHECK LEFT_PAREN expr RIGHT_PAREN
+        | CHECK LP_ expr RP_
     ) 
-    constraintState?
+    constraintState*
     ;
     
 outOfLineRefConstraint
-    : SCOPE FOR LEFT_PAREN lobItem RIGHT_PAREN IS  tableName
-    | REF LEFT_PAREN lobItem RIGHT_PAREN WITH ROWID
-    | (CONSTRAINT constraintName)? FOREIGN KEY lobItemList referencesClause constraintState?
+    : SCOPE FOR LP_ lobItem RP_ IS  tableName
+    | REF LP_ lobItem RP_ WITH ROWID
+    | (CONSTRAINT constraintName)? FOREIGN KEY lobItemList referencesClause constraintState*
     ;
-
- encryptionSpec
+    
+encryptionSpec
     : (USING STRING)?
     (IDENTIFIED BY STRING)?
     STRING? (NO? SALT)?
-    ;   
-
+    ;
+    
 objectProperties
     : objectProperty (COMMA objectProperty)*
     ;
-
+    
 objectProperty
     : (columnName | attributeName ) (DEFAULT expr)? (inlineConstraint* | inlineRefConstraint?)
     | outOfLineConstraint 
     | outOfLineRefConstraint
     ;
-
+    
 columnProperties
     : columnProperty+
     ;
-
+    
 columnProperty
     : objectTypeColProperties
     ;
@@ -138,8 +128,8 @@ columnProperty
 objectTypeColProperties
     : COLUMN columnName substitutableColumnClause
     ;
-
+    
 substitutableColumnClause
-    : ELEMENT? IS OF TYPE? LEFT_PAREN ONLY? typeName RIGHT_PAREN
+    : ELEMENT? IS OF TYPE? LP_ ONLY? typeName RP_
     | NOT? SUBSTITUTABLE AT ALL LEVELS
     ;

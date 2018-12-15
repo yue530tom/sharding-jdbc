@@ -1,8 +1,8 @@
 grammar MySQLStatement;
 
-import MySQLKeyword, Keyword, MySQLBase, MySQLDQL, MySQLDML, DQLBase, DMLBase, MySQLCreateIndex
+import MySQLKeyword, Keyword, MySQLDQL, MySQLBase, MySQLDML, DQLBase, DMLBase, MySQLCreateIndex
        , MySQLDropIndex, MySQLCreateTable, MySQLAlterTable, MySQLDropTable, MySQLTruncateTable
-       , MySQLTCLStatement
+       , MySQLTCLStatement, MySQLDCLStatement
        ;
 
 execute
@@ -22,5 +22,22 @@ execute
     | savepoint
     | beginWork
     | setVariable
+    | grant
+    | grantProxy
+    | grantRole
+    | revoke
+    | revokeAll
+    | revokeProxy
+    | revokeRole
+    | createUser
+    | alterUser
+    | alterCurrentUser
+    | alterUserRole
+    | dropUser
+    | renameUser
+    | createRole
+    | dropRole
+    | setPassword
+    | setDefaultRole
+    | setRole
     ;
- 

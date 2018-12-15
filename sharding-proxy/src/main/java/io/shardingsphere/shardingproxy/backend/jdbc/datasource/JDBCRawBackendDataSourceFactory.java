@@ -19,7 +19,12 @@ package io.shardingsphere.shardingproxy.backend.jdbc.datasource;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import io.shardingsphere.core.exception.ShardingException;
+import io.shardingsphere.core.metadata.datasource.dialect.MySQLDataSourceMetaData;
+import io.shardingsphere.core.metadata.datasource.dialect.PostgreSQLDataSourceMetaData;
 import io.shardingsphere.core.rule.DataSourceParameter;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import javax.sql.DataSource;
 
@@ -29,14 +34,26 @@ import javax.sql.DataSource;
  * @author zhaojun
  * @author zhangliang
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class JDBCRawBackendDataSourceFactory implements JDBCBackendDataSourceFactory {
     
-    private static final String DRIVER_CLASS_NAME = "com.mysql.jdbc.Driver";
+    private static final JDBCRawBackendDataSourceFactory INSTANCE = new JDBCRawBackendDataSourceFactory();
+    
+    /**
+     * Get instance of {@code JDBCBackendDataSourceFactory}.
+     *
+     * @return JDBC backend data source factory
+     */
+    public static JDBCBackendDataSourceFactory getInstance() {
+        return INSTANCE;
+    }
     
     @Override
     public DataSource build(final String dataSourceName, final DataSourceParameter dataSourceParameter) {
         HikariConfig config = new HikariConfig();
-        config.setDriverClassName(DRIVER_CLASS_NAME);
+        String driverClassName = getDriverClassName(dataSourceParameter.getUrl());
+        validateDriverClassName(driverClassName);
+        config.setDriverClassName(driverClassName);
         config.setJdbcUrl(dataSourceParameter.getUrl());
         config.setUsername(dataSourceParameter.getUsername());
         config.setPassword(dataSourceParameter.getPassword());
@@ -57,5 +74,27 @@ public final class JDBCRawBackendDataSourceFactory implements JDBCBackendDataSou
         config.addDataSourceProperty("maintainTimeStats", Boolean.FALSE.toString());
         config.addDataSourceProperty("netTimeoutForStreamingResults", 0);
         return new HikariDataSource(config);
+    }
+    
+    private String getDriverClassName(final String url) {
+        try {
+            new MySQLDataSourceMetaData(url);
+            return "com.mysql.jdbc.Driver";
+        } catch (final ShardingException ignore) {
+        }
+        try {
+            new PostgreSQLDataSourceMetaData(url);
+            return "org.postgresql.Driver";
+        } catch (final ShardingException ignore) {
+        }
+        throw new UnsupportedOperationException(String.format("Cannot support url `%s`", url));
+    }
+    
+    private void validateDriverClassName(final String driverClassName) {
+        try {
+            Class.forName(driverClassName);
+        } catch (final ClassNotFoundException ex) {
+            throw new ShardingException("Cannot load JDBC driver class `%s`, make sure it in Sharding-Proxy's classpath.", driverClassName);
+        }
     }
 }
